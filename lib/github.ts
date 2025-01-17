@@ -1,5 +1,4 @@
 import fs from 'fs/promises';
-import os from 'os';
 import path from 'path';
 import { simpleGit } from 'simple-git';
 
@@ -39,25 +38,28 @@ export function parseGitHubUrl(url: string | undefined): RepoInfo {
   };
 }
 
-export async function cloneRepository(url: string | undefined): Promise<{ repoPath: string; repoInfo: RepoInfo }> {
-  if (!url) {
-    throw new Error('GitHub URL is required');
-  }
+const REPOS_DIR = process.env.NODE_ENV === 'production' ? '/tmp/repos' : './repos'
 
-  const repoInfo = parseGitHubUrl(url);
-
-  // Create a temporary directory
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'repo-mentor-'));
-  const git = simpleGit();
+export async function cloneRepository(repoUrl: string) {
+  const repoInfo = parseGitHubUrl(repoUrl)
+  const repoPath = path.join(REPOS_DIR, `${repoInfo.owner}-${repoInfo.repo}-${Date.now()}`)
 
   try {
+    // Ensure the repos directory exists
+    await fs.mkdir(REPOS_DIR, { recursive: true })
+
     // Clone the repository
-    await git.clone(url, tempDir);
-    return { repoPath: tempDir, repoInfo };
+    const git = simpleGit()
+    await git.clone(repoUrl, repoPath, ['--depth', '1'])
+
+    return {
+      repoPath,
+      repoInfo
+    }
   } catch (error) {
-    // Clean up the temp directory if clone fails
-    await cleanup(tempDir);
-    throw new Error(`Failed to clone repository: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // Clean up if cloning fails
+    await cleanup(repoPath)
+    throw error
   }
 }
 
@@ -137,10 +139,10 @@ export async function getFileCount(repoPath: string): Promise<number> {
 }
 
 // Clean up cloned repositories
-export async function cleanup(repoPath: string): Promise<void> {
+export async function cleanup(repoPath: string) {
   try {
-    await fs.rm(repoPath, { recursive: true, force: true });
+    await fs.rm(repoPath, { recursive: true, force: true })
   } catch (error) {
-    console.error('Error cleaning up repository:', error);
+    console.error('Error cleaning up repository:', error)
   }
 }

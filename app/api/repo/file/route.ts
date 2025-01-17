@@ -1,6 +1,7 @@
-import { GitService } from '@/utils/git'
+import { readFile } from 'fs/promises'
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { join } from 'path'
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error('OPENAI_API_KEY is not defined in environment variables')
@@ -11,26 +12,36 @@ const openai = new OpenAI({
 })
 
 export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const repoPath = searchParams.get('repoPath')
-    const filePath = searchParams.get('filePath')
+  const { searchParams } = new URL(request.url)
+  const repoPath = searchParams.get('repoPath')
+  const filePath = searchParams.get('filePath')
 
-    if (!repoPath || !filePath) {
-      return NextResponse.json(
-        { error: 'Missing repoPath or filePath parameter' },
-        { status: 400 }
-      )
+  if (!repoPath || !filePath) {
+    return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
+  }
+
+  try {
+    // Normalize paths to handle Windows/Unix differences
+    const normalizedRepoPath = repoPath.replace(/\\/g, '/')
+    const normalizedFilePath = filePath.replace(/\\/g, '/')
+    const fullPath = join(normalizedRepoPath, normalizedFilePath)
+
+    // Ensure the file path doesn't try to escape the repo directory
+    if (normalizedFilePath.includes('..')) {
+      return NextResponse.json({ error: 'Invalid file path' }, { status: 400 })
     }
 
-    const gitService = new GitService()
-    const content = await gitService.readFile(repoPath, filePath)
-
+    const content = await readFile(fullPath, 'utf-8')
     return NextResponse.json({ content })
   } catch (error) {
+    console.error('Error reading file:', error)
+    const isNotFound = error instanceof Error &&
+      'code' in error &&
+      (error as { code: string }).code === 'ENOENT'
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to read file' },
-      { status: 500 }
+      { error: 'Failed to read file' },
+      { status: isNotFound ? 404 : 500 }
     )
   }
 }
@@ -54,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     const fileExtension = fileName.split('.').pop()?.toLowerCase()
-    
+
     const prompt = `Analyze the following code file and provide a detailed explanation. The file is named "${fileName}".
 
 Code content:
