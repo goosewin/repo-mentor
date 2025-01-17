@@ -3,111 +3,83 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from '@/lib/utils'
-import { Message, useChat } from 'ai/react'
+import { useChat } from 'ai/react'
 import { Bot, User } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface SidebarChatProps {
   fileName?: string
   fileContent?: string
 }
 
-// Keep track of file conversations across component remounts
-const fileConversations = new Map<string, { messages: Message[], pendingMessage: boolean }>()
+export function SidebarChat({ fileName, fileContent }: SidebarChatProps) {
+  const [currentFile, setCurrentFile] = useState<string | undefined>(undefined)
+  const [currentContent, setCurrentContent] = useState<string | undefined>(undefined)
+  const shouldExplain = useRef(false)
 
-export function SidebarChat({ fileName, fileContent }: SidebarChatProps = {}) {
-  const previousFile = useRef<string | undefined>(undefined)
-  const isFirstLoad = useRef(true)
-
-  const { messages, input, handleInputChange, handleSubmit, setMessages, append, isLoading, stop } = useChat({
+  const { messages, input, handleInputChange, handleSubmit: rawHandleSubmit, setMessages, append, isLoading, stop } = useChat({
     api: '/api/chat',
-    body: {
-      fileName,
-      fileContent
-    },
-    id: fileName, // Each file gets its own chat instance
-    onFinish: () => {
-      if (fileName) {
-        fileConversations.set(fileName, {
-          messages: messages,
-          pendingMessage: false
-        })
-      }
-    },
-    onError: () => {
-      if (fileName) {
-        fileConversations.set(fileName, {
-          messages: messages,
-          pendingMessage: false
-        })
-      }
-    }
+    id: fileName || undefined
   })
 
-  // Start initial conversation when file is loaded
+  // Handle file changes
   useEffect(() => {
-    if (fileName && fileContent && isFirstLoad.current) {
-      isFirstLoad.current = false
+    if (fileName !== currentFile) {
+      stop()
       setMessages([])
-      void append({
-        content: `Please explain the code in ${fileName}.`,
-        role: 'user',
-      })
+      setCurrentFile(fileName)
+      setCurrentContent(undefined)
+      shouldExplain.current = true
     }
-  }, [fileName, fileContent, append, setMessages])
+  }, [fileName, currentFile, stop, setMessages])
 
-  // Handle file changes and restore previous conversations
+  // Handle content updates and start explanation
   useEffect(() => {
-    if (fileName === previousFile.current) return
-
-    // Cancel any ongoing streaming
-    stop()
-
-    // Save current conversation if any
-    if (previousFile.current && messages.length > 0) {
-      fileConversations.set(previousFile.current, {
-        messages: messages,
-        pendingMessage: false
-      })
-    }
-
-    // Restore previous conversation or start new one
-    if (fileName) {
-      const prevConversation = fileConversations.get(fileName)
-      if (prevConversation) {
-        setMessages(prevConversation.messages)
-      } else if (fileContent && !isFirstLoad.current) { // Don't start new conversation if it's first load
-        setMessages([])
-        void append({
+    if (fileContent !== currentContent) {
+      setCurrentContent(fileContent)
+      if (shouldExplain.current && fileContent && fileName) {
+        shouldExplain.current = false
+        append({
           content: `Please explain the code in ${fileName}.`,
           role: 'user',
+          id: `explain-${Date.now()}`
+        }, {
+          data: { fileName, fileContent }
         })
       }
     }
-
-    previousFile.current = fileName
-  }, [fileName, fileContent, messages, setMessages, append, stop])
+  }, [fileContent, currentContent, fileName, append])
 
   if (!fileName) {
     return (
-      <div className="text-center text-muted-foreground">
+      <div className="h-full flex items-center justify-center text-muted-foreground">
         <p>Select a file to get an explanation.</p>
+      </div>
+    )
+  }
+
+  if (!currentContent) {
+    return (
+      <div className="h-full flex items-center justify-center text-muted-foreground">
+        <div className="flex flex-col items-center gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
+          <p>Loading file...</p>
+        </div>
       </div>
     )
   }
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!input.trim() || isLoading) return
-
-    // Stop any ongoing streaming before submitting
-    stop()
-    handleSubmit(e)
+    if (!input.trim() || isLoading || !currentContent || !fileName) return
+    rawHandleSubmit(e, {
+      data: { fileName, fileContent: currentContent }
+    })
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+      <div className="flex-1 overflow-y-auto space-y-4 pr-2 min-h-0">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -131,26 +103,28 @@ export function SidebarChat({ fileName, fileContent }: SidebarChatProps = {}) {
           </div>
         ))}
         {isLoading && (
-          <div className="flex justify-center">
+          <div className="flex justify-center py-2">
             <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
           </div>
         )}
       </div>
 
-      <form onSubmit={onSubmit} className="mt-4 border-t pt-4">
-        <div className="flex space-x-2">
-          <Input
-            value={input}
-            onChange={handleInputChange}
-            placeholder="Ask about the code..."
-            className="flex-1"
-            disabled={isLoading}
-          />
-          <Button type="submit" size="sm" disabled={isLoading || !input.trim()}>
-            Send
-          </Button>
-        </div>
-      </form>
+      <div className="flex-shrink-0 border-t pt-4 mt-4">
+        <form onSubmit={onSubmit}>
+          <div className="flex space-x-2">
+            <Input
+              value={input}
+              onChange={handleInputChange}
+              placeholder="Ask about the code..."
+              className="flex-1"
+              disabled={isLoading}
+            />
+            <Button type="submit" size="sm" disabled={isLoading || !input.trim()}>
+              Send
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

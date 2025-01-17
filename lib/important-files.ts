@@ -75,7 +75,7 @@ async function findApiRoutes(apiPath: string): Promise<ImportantFile[]> {
 
     for (const file of files) {
       const fullPath = path.join(apiPath, file.name);
-      
+
       if (file.isDirectory()) {
         // Recursively check subdirectories
         const subFiles = await findApiRoutes(fullPath);

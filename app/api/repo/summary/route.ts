@@ -1,15 +1,15 @@
-import { findImportantFiles } from '@/lib/important-files'
-import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
-import { 
-  cloneRepository, 
-  getLanguages, 
-  getReadmeContent, 
-  getLicense, 
-  getFileCount,
+import {
   cleanup,
+  cloneRepository,
+  getFileCount,
+  getLanguages,
+  getLicense,
+  getReadmeContent,
   type Language
-} from '@/lib/github'
+} from '@/lib/github';
+import { findImportantFiles } from '@/lib/important-files';
+import { NextResponse } from 'next/server';
+import OpenAI from 'openai';
 
 interface RequestBody {
   repoUrl: string;  // GitHub repository URL
@@ -43,7 +43,7 @@ const openai = new OpenAI({
 
 export async function POST(request: Request): Promise<NextResponse> {
   let repoPath: string | undefined;
-  
+
   try {
     // Validate request body
     const body = await request.json();
@@ -59,11 +59,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (!repoUrl.includes('github.com')) {
       throw new Error('Only GitHub repositories are supported');
     }
-    
+
     console.log('Cloning repository:', repoUrl);
     const { repoPath: clonedPath, repoInfo } = await cloneRepository(repoUrl);
     repoPath = clonedPath;
-    
+
     // Gather repository information
     console.log('Gathering repository information...');
     const [{ languages, totalBytes }, readme, license, fileCount] = await Promise.all([
@@ -80,7 +80,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       license,
       readme
     };
-    
+
     // Find important files in the repository
     console.log('Finding important files...');
     const importantFiles = await findImportantFiles(clonedPath);
@@ -113,7 +113,7 @@ Please provide a JSON response with the following structure:
 Focus on providing accurate, technical insights based on the actual code and documentation provided.`;
 
     console.log('Making request to OpenAI API...');
-    
+
     const completion = await openai.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
       model: "gpt-3.5-turbo",
@@ -141,7 +141,7 @@ Focus on providing accurate, technical insights based on the actual code and doc
     });
 
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to generate repository summary',
         details: error instanceof Error ? error.message : 'An unknown error occurred'
       },

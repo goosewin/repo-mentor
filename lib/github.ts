@@ -1,7 +1,7 @@
-import { simpleGit } from 'simple-git';
 import fs from 'fs/promises';
-import path from 'path';
 import os from 'os';
+import path from 'path';
+import { simpleGit } from 'simple-git';
 
 export interface RepoInfo {
   owner: string;
@@ -27,11 +27,11 @@ export function parseGitHubUrl(url: string | undefined): RepoInfo {
   // Handle different GitHub URL formats
   const urlPattern = /github\.com[\/:]([^\/]+)\/([^\/]+?)(\.git)?$/;
   const match = url.match(urlPattern);
-  
+
   if (!match) {
     throw new Error('Invalid GitHub URL. Please provide a valid GitHub repository URL (e.g., https://github.com/owner/repo)');
   }
-  
+
   return {
     owner: match[1],
     repo: match[2].replace('.git', ''),
@@ -45,11 +45,11 @@ export async function cloneRepository(url: string | undefined): Promise<{ repoPa
   }
 
   const repoInfo = parseGitHubUrl(url);
-  
+
   // Create a temporary directory
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'repo-mentor-'));
   const git = simpleGit();
-  
+
   try {
     // Clone the repository
     await git.clone(url, tempDir);
@@ -68,9 +68,9 @@ export async function getLanguages(owner: string, repo: string): Promise<{ langu
       throw new Error(`GitHub API error: ${response.statusText}`);
     }
     const data = await response.json() as GitHubLanguageResponse;
-    
+
     const totalBytes = Object.values(data).reduce((a, b) => a + b, 0);
-    
+
     const languages = Object.entries(data).map(([name, bytes]) => ({
       name,
       percentage: (bytes / totalBytes) * 100,
@@ -114,16 +114,16 @@ export async function getLicense(owner: string, repo: string): Promise<string | 
 
 export async function getFileCount(repoPath: string): Promise<number> {
   let count = 0;
-  
+
   async function countFiles(dir: string) {
     const files = await fs.readdir(dir);
-    
+
     for (const file of files) {
       if (file === '.git' || file === 'node_modules') continue;
-      
+
       const fullPath = path.join(dir, file);
       const stat = await fs.stat(fullPath);
-      
+
       if (stat.isDirectory()) {
         await countFiles(fullPath);
       } else {
@@ -131,7 +131,7 @@ export async function getFileCount(repoPath: string): Promise<number> {
       }
     }
   }
-  
+
   await countFiles(repoPath);
   return count;
 }
