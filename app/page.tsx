@@ -1,48 +1,90 @@
 'use client'
 
-import { useState } from 'react'
-import { Input } from "@/components/ui/input"
+import { CodeViewer } from '@/components/CodeViewer'
+import { QASection } from '@/components/QASection'
+import { RepoSummary } from '@/components/RepoSummary'
+import { TreeView } from '@/components/TreeView'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { TreeView } from './components/TreeView'
-import { CodeViewer } from './components/CodeViewer'
-import { RepoSummary } from './components/RepoSummary'
-import { QASection } from './components/QASection'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import type { FileNode } from '@/utils/git'
 import { Github, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 export default function RepoMentor() {
   const [repoUrl, setRepoUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
   const [selectedFile, setSelectedFile] = useState('')
+  const [repoPath, setRepoPath] = useState('')
+  const [files, setFiles] = useState<FileNode[]>([])
+  const [fileContent, setFileContent] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulating repo loading
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    setIsLoading(false)
-    setIsLoaded(true)
+
+    try {
+      const response = await fetch('/api/repo/clone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoUrl })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to load repository')
+      }
+
+      const { repoPath: path, files: repoFiles } = await response.json()
+      setRepoPath(path)
+      setFiles(repoFiles)
+      setIsLoaded(true)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to load repository')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleFileSelect = async (filePath: string) => {
+    setSelectedFile(filePath)
+    try {
+      const response = await fetch(
+        `/api/repo/file?repoPath=${encodeURIComponent(repoPath)}&filePath=${encodeURIComponent(filePath)}`
+      )
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to read file')
+      }
+
+      const { content } = await response.json()
+      setFileContent(content)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : `Failed to read file: ${filePath}`)
+      setFileContent('')
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 dark">
-      <header className="bg-white dark:bg-gray-800 shadow-md">
+    <div className="min-h-screen bg-background">
+      <header className="bg-card shadow-md">
         <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-white">Repo Mentor</h1>
+          <h1 className="text-3xl font-bold text-foreground">Repo Mentor</h1>
         </div>
       </header>
-      
+
       <main className="container mx-auto px-4 py-8">
         <Card className="mb-8">
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="flex gap-2">
-              <Input 
-                type="text" 
-                placeholder="Enter GitHub repo URL" 
+              <Input
+                type="text"
+                placeholder="Enter GitHub repo URL"
                 value={repoUrl}
                 onChange={(e) => setRepoUrl(e.target.value)}
                 className="flex-grow"
@@ -67,7 +109,7 @@ export default function RepoMentor() {
         {isLoaded && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <Card className="lg:col-span-3">
-              <RepoSummary />
+              <RepoSummary repoUrl={repoUrl} repoPath={repoPath} />
             </Card>
 
             <Card className="lg:col-span-1">
@@ -76,7 +118,7 @@ export default function RepoMentor() {
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[600px] pr-4">
-                  <TreeView onSelectFile={setSelectedFile} />
+                  <TreeView files={files} onSelectFile={handleFileSelect} />
                 </ScrollArea>
               </CardContent>
             </Card>
@@ -94,10 +136,10 @@ export default function RepoMentor() {
                 </CardHeader>
                 <CardContent>
                   <TabsContent value="code">
-                    <CodeViewer file={selectedFile} />
+                    <CodeViewer content={fileContent} />
                   </TabsContent>
                   <TabsContent value="explanation">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                       {selectedFile ? (
                         `This file, ${selectedFile}, is a key component of the application. It [explanation would be generated here based on the file content and purpose]...`
                       ) : (
@@ -118,4 +160,3 @@ export default function RepoMentor() {
     </div>
   )
 }
-

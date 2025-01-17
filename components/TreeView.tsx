@@ -1,26 +1,25 @@
 'use client'
 
-import { useState } from 'react'
-import { ChevronRight, ChevronDown, Folder, FileCode } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+import type { FileNode } from '@/utils/git'
+import { ChevronDown, ChevronRight, FileCode, Folder } from 'lucide-react'
+import { useState } from 'react'
 
 interface TreeNodeProps {
-  name: string
-  children?: TreeNodeProps[]
+  node: FileNode
   onSelectFile: (path: string) => void
-  path: string
 }
 
-const TreeNode: React.FC<TreeNodeProps> = ({ name, children, onSelectFile, path }) => {
+const TreeNode: React.FC<TreeNodeProps> = ({ node, onSelectFile }) => {
   const [isOpen, setIsOpen] = useState(false)
-  const isFolder = Array.isArray(children)
+  const isDirectory = node.type === 'directory'
 
   const toggleOpen = () => setIsOpen(!isOpen)
 
   return (
     <div>
       <div className="flex items-center">
-        {isFolder ? (
+        {isDirectory ? (
           <Button variant="ghost" size="sm" className="p-0 h-6 w-6" onClick={toggleOpen}>
             {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
@@ -29,25 +28,24 @@ const TreeNode: React.FC<TreeNodeProps> = ({ name, children, onSelectFile, path 
         )}
         <Button
           variant="ghost"
-          className="p-1 h-6 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-          onClick={() => !isFolder && onSelectFile(path)}
+          className="p-1 h-6 hover:bg-accent"
+          onClick={() => !isDirectory && onSelectFile(node.path)}
         >
-          {isFolder ? (
+          {isDirectory ? (
             <Folder className="mr-2 h-4 w-4" />
           ) : (
             <FileCode className="mr-2 h-4 w-4" />
           )}
-          {name}
+          {node.name}
         </Button>
       </div>
-      {isOpen && isFolder && (
+      {isOpen && isDirectory && node.children && (
         <div className="ml-4">
-          {children.map((child, index) => (
+          {node.children.map((child) => (
             <TreeNode
-              key={index}
-              {...child}
+              key={child.path}
+              node={child}
               onSelectFile={onSelectFile}
-              path={`${path}/${child.name}`}
             />
           ))}
         </div>
@@ -57,45 +55,20 @@ const TreeNode: React.FC<TreeNodeProps> = ({ name, children, onSelectFile, path 
 }
 
 interface TreeViewProps {
-  onSelectFile: (path: string) => void
+  files: FileNode[]
+  onSelectFile: (filePath: string) => void
 }
 
-export const TreeView: React.FC<TreeViewProps> = ({ onSelectFile }) => {
-  const treeData: TreeNodeProps = {
-    name: 'root',
-    children: [
-      {
-        name: 'src',
-        children: [
-          { 
-            name: 'components', 
-            children: [
-              { name: 'Button.tsx', children: undefined },
-              { name: 'Input.tsx', children: undefined },
-            ]
-          },
-          { 
-            name: 'pages', 
-            children: [
-              { name: 'index.tsx', children: undefined },
-              { name: 'about.tsx', children: undefined },
-            ]
-          },
-          { 
-            name: 'styles', 
-            children: [
-              { name: 'globals.css', children: undefined },
-            ]
-          },
-        ],
-      },
-      { name: 'package.json', children: undefined },
-      { name: 'tsconfig.json', children: undefined },
-    ],
-    path: '',
-    onSelectFile: () => {},
-  }
-
-  return <TreeNode {...treeData} onSelectFile={onSelectFile} />
+export function TreeView({ files, onSelectFile }: TreeViewProps) {
+  return (
+    <div className="space-y-1">
+      {files.map((node) => (
+        <TreeNode
+          key={node.path}
+          node={node}
+          onSelectFile={onSelectFile}
+        />
+      ))}
+    </div>
+  )
 }
-
