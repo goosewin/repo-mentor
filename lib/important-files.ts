@@ -49,7 +49,7 @@ export async function findImportantFiles(repoPath: string): Promise<ImportantFil
         reason: file.reason,
         content: content
       });
-    } catch (error) {
+    } catch {
       // Skip if file doesn't exist
       console.log(`File ${file.path} not found`);
     }
@@ -60,7 +60,7 @@ export async function findImportantFiles(repoPath: string): Promise<ImportantFil
     const apiPath = path.join(repoPath, API_FOLDER);
     const apiFiles = await findApiRoutes(apiPath);
     importantFiles.push(...apiFiles);
-  } catch (error) {
+  } catch {
     console.log('API folder not found');
   }
 

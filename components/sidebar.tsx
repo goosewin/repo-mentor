@@ -1,7 +1,5 @@
 import { FileExplainer } from "@/components/FileExplainer"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Sheet,
   SheetContent,
@@ -11,7 +9,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 
-export function Sidebar() {
+export function Sidebar({ fileName, fileContent }: { fileName: string, fileContent: string }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -25,10 +23,9 @@ export function Sidebar() {
           </SheetDescription>
         </SheetHeader>
         <div className="grid gap-4 py-4">
-          <FileExplainer />
+          <FileExplainer fileName={fileName} fileContent={fileContent} />
         </div>
       </SheetContent>
     </Sheet>
   )
 }
-
