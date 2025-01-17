@@ -1,7 +1,7 @@
 'use client'
 
 import { CodeViewer } from '@/components/CodeViewer'
-import { QASection } from '@/components/QASection'
+import { SidebarChat } from '@/components/SidebarChat'
 import { TreeView } from '@/components/TreeView'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -108,7 +108,7 @@ export default function RepoPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* File Explorer */}
-            <Card className={`${isExplorerCollapsed ? 'lg:col-span-1' : 'lg:col-span-3'} transition-all duration-300`}>
+            <Card className={`${isExplorerCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'} transition-all duration-300`}>
               <CardHeader>
                 <div className="flex justify-between items-center">
                   {!isExplorerCollapsed && <CardTitle>File Explorer</CardTitle>}
@@ -133,14 +133,14 @@ export default function RepoPage() {
             </Card>
 
             {/* Code Viewer */}
-            <Card className={`${isExplorerCollapsed ? 'lg:col-span-8' : 'lg:col-span-6'} transition-all duration-300`}>
+            <Card className={`${isExplorerCollapsed ? 'lg:col-span-7' : 'lg:col-span-6'} transition-all duration-300`}>
               <Tabs defaultValue="code" className="w-full">
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle>{selectedFile || 'File Viewer'}</CardTitle>
                     <TabsList>
                       <TabsTrigger value="code">Code</TabsTrigger>
-                      <TabsTrigger value="explanation">Explanation</TabsTrigger>
+                      <TabsTrigger value="explanation">Metadata</TabsTrigger>
                     </TabsList>
                   </div>
                 </CardHeader>
@@ -161,14 +161,14 @@ export default function RepoPage() {
               </Tabs>
             </Card>
 
-            {/* Q&A Section */}
-            <Card className="lg:col-span-3">
+            {/* Chat Section */}
+            <Card className={`${isExplorerCollapsed ? 'lg:col-span-4' : 'lg:col-span-4'} transition-all duration-300`}>
               <CardHeader>
-                <CardTitle>Ask Questions</CardTitle>
+                <CardTitle>Chat</CardTitle>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[700px]">
-                  <QASection selectedFile={selectedFile} />
+                  <SidebarChat fileName={selectedFile} fileContent={fileContent} />
                 </ScrollArea>
               </CardContent>
             </Card>
