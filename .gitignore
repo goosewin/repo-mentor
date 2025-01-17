@@ -42,3 +42,8 @@ next-env.d.ts
 
 # git repos
 repos/
+
+# make sure .env.example is allowed
+!.env.example
+
+chat-example/
