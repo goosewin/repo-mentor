@@ -17,16 +17,16 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, onSelectFile, isCollapsed }) 
   const [isOpen, setIsOpen] = useState(false)
   const isDirectory = node.type === 'directory'
 
-  const toggleOpen = (e: React.MouseEvent) => {
-    e.stopPropagation()
+  const toggleOpen = () => {
     setIsOpen(!isOpen)
   }
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
     if (!isDirectory) {
       onSelectFile(node.path)
     } else {
-      setIsOpen(!isOpen)
+      toggleOpen()
     }
   }
 
