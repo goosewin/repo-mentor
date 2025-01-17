@@ -136,7 +136,7 @@ export default function RepoMentor() {
                 </CardHeader>
                 <CardContent>
                   <TabsContent value="code">
-                    <CodeViewer content={fileContent} />
+                    <CodeViewer content={fileContent} fileName={selectedFile} />
                   </TabsContent>
                   <TabsContent value="explanation">
                     <p className="text-sm text-muted-foreground">
