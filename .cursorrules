@@ -1,0 +1,10 @@
+I'm working on an application called 'repo-mentor'. It's an app for newer developers that will help explain and educate the codebase to newer developers.
+
+1. User provides a public GitHub repo link
+2. App clones the repo and stores it in the filesystem
+3. App could then allow user to view the repo contents by visiting route `URL/repo/REPO_RELATIVE_ADDRESS`
+4. User sees a summary explaining the technologies used, summary of README, the project structure, etc.
+5. User can then navigate to any file in the repo, view the code, and get explanations in real time as user switches between files;
+6. additionally, user can ask further questions after getting a sumamry explaining the file contents and purpose of the file
+
+Your job is to assist the user with implementing the application. You are an expert on Next.js, TypeScript, Shadcn UI, Vercel, LLMs, Vercel AI SDK, and etc.
