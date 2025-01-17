@@ -4,10 +4,12 @@ import { CodeViewer } from '@/components/CodeViewer'
 import { QASection } from '@/components/QASection'
 import { RepoSummary } from '@/components/RepoSummary'
 import { TreeView } from '@/components/TreeView'
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { FileNode } from '@/utils/git'
+import { PanelLeftOpen, PanelRightOpen } from "lucide-react"
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -19,6 +21,7 @@ export default function RepoPage() {
   const [repoPath, setRepoPath] = useState('')
   const [files, setFiles] = useState<FileNode[]>([])
   const [fileContent, setFileContent] = useState('')
+  const [isExplorerCollapsed, setIsExplorerCollapsed] = useState(false)
 
   // Extract owner and repo from slug
   const slug = Array.isArray(params.slug) ? params.slug : [params.slug]
@@ -101,53 +104,78 @@ export default function RepoPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-3">
+        <div className="grid grid-cols-1 gap-8">
+          <Card className="col-span-1">
             <RepoSummary repoUrl={repoUrl} repoPath={repoPath} />
           </Card>
 
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle>File Explorer</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[600px] pr-4">
-                <TreeView files={files} onSelectFile={handleFileSelect} />
-              </ScrollArea>
-            </CardContent>
-          </Card>
-
-          <Card className="lg:col-span-2">
-            <Tabs defaultValue="code" className="w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* File Explorer */}
+            <Card className={`${isExplorerCollapsed ? 'lg:col-span-1' : 'lg:col-span-3'} transition-all duration-300`}>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>{selectedFile || 'File Viewer'}</CardTitle>
-                  <TabsList>
-                    <TabsTrigger value="code">Code</TabsTrigger>
-                    <TabsTrigger value="explanation">Explanation</TabsTrigger>
-                  </TabsList>
+                  {!isExplorerCollapsed && <CardTitle>File Explorer</CardTitle>}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsExplorerCollapsed(!isExplorerCollapsed)}
+                  >
+                    {isExplorerCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <TabsContent value="code">
-                  <CodeViewer content={fileContent} fileName={selectedFile} />
-                </TabsContent>
-                <TabsContent value="explanation">
-                  <p className="text-sm text-muted-foreground">
-                    {selectedFile ? (
-                      `This file, ${selectedFile}, is a key component of the application. It [explanation would be generated here based on the file content and purpose]...`
-                    ) : (
-                      'Select a file to view its explanation.'
-                    )}
-                  </p>
-                </TabsContent>
+                <ScrollArea className="h-[700px] pr-4">
+                  <TreeView
+                    files={files}
+                    onSelectFile={handleFileSelect}
+                    isCollapsed={isExplorerCollapsed}
+                  />
+                </ScrollArea>
               </CardContent>
-            </Tabs>
-          </Card>
+            </Card>
 
-          <Card className="lg:col-span-3">
-            <QASection selectedFile={selectedFile} />
-          </Card>
+            {/* Code Viewer */}
+            <Card className={`${isExplorerCollapsed ? 'lg:col-span-8' : 'lg:col-span-6'} transition-all duration-300`}>
+              <Tabs defaultValue="code" className="w-full">
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>{selectedFile || 'File Viewer'}</CardTitle>
+                    <TabsList>
+                      <TabsTrigger value="code">Code</TabsTrigger>
+                      <TabsTrigger value="explanation">Explanation</TabsTrigger>
+                    </TabsList>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <TabsContent value="code">
+                    <CodeViewer content={fileContent} fileName={selectedFile} />
+                  </TabsContent>
+                  <TabsContent value="explanation">
+                    <p className="text-sm text-muted-foreground">
+                      {selectedFile ? (
+                        `This file, ${selectedFile}, is a key component of the application. It [explanation would be generated here based on the file content and purpose]...`
+                      ) : (
+                        'Select a file to view its explanation.'
+                      )}
+                    </p>
+                  </TabsContent>
+                </CardContent>
+              </Tabs>
+            </Card>
+
+            {/* Q&A Section */}
+            <Card className="lg:col-span-3">
+              <CardHeader>
+                <CardTitle>Ask Questions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[700px]">
+                  <QASection selectedFile={selectedFile} />
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     </div>

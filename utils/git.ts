@@ -72,9 +72,12 @@ export class GitService {
       const nodes: FileNode[] = [];
 
       for (const item of items) {
+        // Skip .git directory
+        if (item.name === '.git') continue;
+
         const relativePath = path.join(dir, item.name);
 
-        if (item.isDirectory()) {
+        if (item.isDirectory() && !item.name.startsWith('.')) {
           const children = await this.listFiles(repoPath, relativePath);
           nodes.push({
             name: item.name,
