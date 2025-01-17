@@ -45,3 +45,5 @@ repos/
 
 # make sure .env.example is allowed
 !.env.example
+
+chat-example/

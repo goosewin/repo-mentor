@@ -67,7 +67,9 @@ export function RepoSummary({ repoUrl, repoPath }: RepoSummaryProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Github className="h-6 w-6" />
-          <h2 className="text-2xl font-bold">{repoUrl.split('/').slice(-2).join('/')}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold">{repoUrl.split('/').slice(-2).join('/')}</h2>
+          </div>
         </div>
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="details" className="border-none">

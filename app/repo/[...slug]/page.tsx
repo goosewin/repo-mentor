@@ -2,7 +2,6 @@
 
 import { CodeViewer } from '@/components/CodeViewer'
 import { QASection } from '@/components/QASection'
-import { RepoSummary } from '@/components/RepoSummary'
 import { TreeView } from '@/components/TreeView'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -97,16 +96,14 @@ export default function RepoPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card shadow-md">
-        <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-foreground">Repo Mentor</h1>
-        </div>
-      </header>
-
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 gap-8">
           <Card className="col-span-1">
-            <RepoSummary repoUrl={repoUrl} repoPath={repoPath} />
+            <CardContent className="flex items-center gap-2 py-6">
+              <h1 className="text-2xl font-bold">Repo Mentor</h1>
+              <span className="text-2xl font-bold text-muted-foreground">{'///'}</span>
+              <h2 className="text-2xl font-bold">{`${owner}/${repo}`}</h2>
+            </CardContent>
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
