@@ -21,6 +21,8 @@ export default function RepoPage() {
   const [files, setFiles] = useState<FileNode[]>([])
   const [fileContent, setFileContent] = useState('')
   const [isExplorerCollapsed, setIsExplorerCollapsed] = useState(false)
+  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false)
+  const [explanation, setExplanation] = useState(null)
 
   // Extract owner and repo from slug
   const slug = Array.isArray(params.slug) ? params.slug : [params.slug]
@@ -56,6 +58,7 @@ export default function RepoPage() {
 
   const handleFileSelect = async (filePath: string) => {
     setSelectedFile(filePath)
+    setIsLoadingExplanation(true)
     try {
       const response = await fetch(
         `/api/repo/file?repoPath=${encodeURIComponent(repoPath)}&filePath=${encodeURIComponent(filePath)}`
@@ -68,9 +71,33 @@ export default function RepoPage() {
 
       const { content } = await response.json()
       setFileContent(content)
+
+      // Get file explanation
+      const explanationResponse = await fetch('/api/repo/file', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content,
+          fileName: filePath.split('/').pop() || filePath
+        })
+      })
+
+      if (!explanationResponse.ok) {
+        const data = await explanationResponse.json()
+        throw new Error(data.error || 'Failed to generate explanation')
+      }
+
+      const explanationData = await explanationResponse.json()
+      setExplanation(explanationData)
     } catch (error) {
+      console.error('Error:', error)
       toast.error(error instanceof Error ? error.message : `Failed to read file: ${filePath}`)
       setFileContent('')
+      setExplanation(null)
+    } finally {
+      setIsLoadingExplanation(false)
     }
   }
 
@@ -149,13 +176,50 @@ export default function RepoPage() {
                     <CodeViewer content={fileContent} fileName={selectedFile} />
                   </TabsContent>
                   <TabsContent value="explanation">
-                    <p className="text-sm text-muted-foreground">
-                      {selectedFile ? (
-                        `This file, ${selectedFile}, is a key component of the application. It [explanation would be generated here based on the file content and purpose]...`
+                    {selectedFile ? (
+                      isLoadingExplanation ? (
+                        <div className="p-4 space-y-3">
+                          <div className="h-4 bg-muted rounded w-3/4 animate-pulse" />
+                          <div className="h-4 bg-muted rounded w-1/2 animate-pulse" />
+                          <div className="h-4 bg-muted rounded w-2/3 animate-pulse" />
+                        </div>
+                      ) : explanation ? (
+                        <div className="space-y-6 p-4">
+                          <div>
+                            <h3 className="text-lg font-semibold mb-2">Overview</h3>
+                            <p className="text-sm text-muted-foreground">{explanation.explanation}</p>
+                          </div>
+                          
+                          <div>
+                            <h3 className="text-lg font-semibold mb-2">Key Points</h3>
+                            <ul className="list-disc list-inside text-sm text-muted-foreground">
+                              {explanation.keyPoints.map((point, index) => (
+                                <li key={index}>{point}</li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          {explanation.suggestedImprovements && explanation.suggestedImprovements.length > 0 && (
+                            <div>
+                              <h3 className="text-lg font-semibold mb-2">Suggested Improvements</h3>
+                              <ul className="list-disc list-inside text-sm text-muted-foreground">
+                                {explanation.suggestedImprovements.map((improvement, index) => (
+                                  <li key={index}>{improvement}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        'Select a file to view its explanation.'
-                      )}
-                    </p>
+                        <div className="p-4">
+                          <p className="text-sm text-muted-foreground">Failed to generate explanation. Please try again.</p>
+                        </div>
+                      )
+                    ) : (
+                      <div className="p-4">
+                        <p className="text-sm text-muted-foreground">Select a file to view its explanation.</p>
+                      </div>
+                    )}
                   </TabsContent>
                 </CardContent>
               </Tabs>
