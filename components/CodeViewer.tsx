@@ -28,14 +28,14 @@ export function CodeViewer({ content, fileName }: CodeViewerProps) {
       <div className="flex flex-col items-center justify-center h-[500px] text-muted-foreground">
         <FileCode className="h-12 w-12 mb-4" />
         <h3 className="text-lg font-semibold mb-2">No File Selected</h3>
-        <p className="text-center max-w-md">
-          Select a file from the explorer to view its contents. You can then:
+        <div className="text-center max-w-md">
+          <p>Select a file from the explorer to view its contents. You can then:</p>
           <ul className="list-disc list-inside mt-2 text-left">
             <li>View the code with syntax highlighting</li>
             <li>Get an AI-powered explanation</li>
             <li>Ask questions about specific parts</li>
           </ul>
-        </p>
+        </div>
       </div>
     )
   }

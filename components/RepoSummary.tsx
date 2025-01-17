@@ -11,44 +11,49 @@ import { toast } from 'sonner'
 
 interface RepoSummaryProps {
   repoUrl: string
-  repoPath: string
 }
 
-export function RepoSummary({ repoUrl, repoPath }: RepoSummaryProps) {
+interface SummaryResponse {
+  summary: {
+    projectOverview: string
+    keyFeatures: string[]
+    techStack: string[]
+  }
+  stats: RepoStats
+  analyzedFiles: { path: string; reason: string }[]
+}
+
+export function RepoSummary({ repoUrl }: RepoSummaryProps) {
   const [stats, setStats] = useState<RepoStats>()
-  const [summary, setSummary] = useState<string>()
+  const [summaryData, setSummaryData] = useState<SummaryResponse>()
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchSummary = async () => {
       try {
-        const response = await fetch(`/api/repo/stats?repoPath=${encodeURIComponent(repoPath)}`)
-        if (!response.ok) {
-          throw new Error('Failed to fetch repo stats')
-        }
-        const data = await response.json()
-        setStats(data)
-
-        // Generate summary using the stats
-        const summaryResponse = await fetch('/api/repo/summary', {
+        const response = await fetch('/api/repo/summary', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+          body: JSON.stringify({ repoUrl })
         })
 
-        if (summaryResponse.ok) {
-          const { summary } = await summaryResponse.json()
-          setSummary(summary)
+        if (!response.ok) {
+          throw new Error('Failed to fetch repo summary')
         }
-      } catch {
-        toast.error('Failed to load repository statistics')
+
+        const data: SummaryResponse = await response.json()
+        setSummaryData(data)
+        setStats(data.stats)
+      } catch (error) {
+        toast.error('Failed to load repository summary')
+        console.error('Error fetching summary:', error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchStats()
-  }, [repoPath])
+    fetchSummary()
+  }, [repoUrl])
 
   if (isLoading) {
     return (
@@ -79,11 +84,9 @@ export function RepoSummary({ repoUrl, repoPath }: RepoSummaryProps) {
             <AccordionContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Description</h3>
+                  <h3 className="text-lg font-semibold mb-4">Overview</h3>
                   <p className="text-muted-foreground">
-                    This repository appears to be a modern web application built with cutting-edge technologies.
-                    It demonstrates best practices in software architecture and includes comprehensive documentation.
-                    The codebase is well-organized and follows industry standards for maintainability and scalability.
+                    {summaryData?.summary.projectOverview}
                   </p>
                 </div>
 
@@ -127,16 +130,35 @@ export function RepoSummary({ repoUrl, repoPath }: RepoSummaryProps) {
         </Accordion>
       </div>
 
-      {summary && (
+      {summaryData && (
         <>
           <Separator className="my-6" />
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Repository Summary</h3>
-            <Card>
-              <CardContent className="pt-6 text-muted-foreground">
-                <p className="whitespace-pre-wrap">{summary}</p>
-              </CardContent>
-            </Card>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Key Features</h3>
+              <Card>
+                <CardContent className="pt-6">
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                    {summaryData.summary.keyFeatures.map((feature, index) => (
+                      <li key={index}>{feature}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Tech Stack</h3>
+              <Card>
+                <CardContent className="pt-6">
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                    {summaryData.summary.techStack.map((tech, index) => (
+                      <li key={index}>{tech}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </>
       )}
